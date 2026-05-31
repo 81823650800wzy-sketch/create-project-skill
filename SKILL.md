@@ -43,7 +43,7 @@ Flags:
 - `--type static|next|vite|node|python|generic` — project type
 - `--private` — make GitHub repo private
 - `--deploy-now` — immediately deploy to Cloudflare Pages via wrangler
-- `--dir <path>` — custom workspace (default: `D:\Claude_workspace`)
+- `--dir <path>` — custom workspace (default: `$CREATE_PROJECT_WORKSPACE` or `~/projects`)
 - `--no-push` — skip GitHub push
 
 ### Step 3: Report Results
@@ -56,13 +56,17 @@ Summarize what was created:
 
 ## Network Notes
 
-- GitHub push may fail due to network restrictions in China
-- Cloudflare Pages deployment (via wrangler) usually works
-- If GitHub push fails, remind user: repo is created on GitHub but code needs a proxy/VPN to push
-- The `--deploy-now` flag bypasses GitHub entirely for deployment
+- GitHub push may fail due to network restrictions in some regions
+- Cloudflare Pages deployment (via wrangler) usually bypasses these restrictions
+- If GitHub push fails, remind user: repo is created on GitHub but code needs proxy/VPN to push
+- The `--deploy-now` flag deploys directly to Cloudflare without requiring GitHub push
 
-## Account Info
+## Configuration
 
-- GitHub: `81823650800wzy-sketch`
-- Cloudflare Account ID: `f7085c2450a7ec7f257366e8cc602971`
-- Default workspace: `D:\Claude_workspace`
+All account-specific values are auto-detected or read from environment variables:
+- `CREATE_PROJECT_WORKSPACE` — default workspace directory (falls back to `~/projects`)
+- `CLOUDFLARE_ACCOUNT_ID` — Cloudflare Account ID (auto-detected from `wrangler whoami` if logged in)
+- GitHub username and repo owner are resolved automatically via `gh` CLI
+- Cloudflare API Token is only needed for GitHub Actions CI/CD (not for `--deploy-now`)
+
+Set these in `~/.bashrc` or a `.env` file to persist your preferences.

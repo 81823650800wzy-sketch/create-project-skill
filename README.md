@@ -15,7 +15,7 @@ Automatically create projects with GitHub repository + Cloudflare Pages deployme
 
 ```bash
 # Clone into Claude Code skills directory
-git clone https://github.com/81823650800wzy-sketch/create-project-skill.git ~/.claude/skills/create-project
+git clone https://github.com/YOUR_USERNAME/create-project-skill.git ~/.claude/skills/create-project
 
 # Or manually: copy SKILL.md + scripts/ into .claude/skills/create-project/
 ```
@@ -42,7 +42,7 @@ bash ~/.claude/skills/create-project/scripts/create-project.sh my-website --type
 | `--type static\|next\|vite\|node\|python\|go\|generic` | Project type |
 | `--private` | Create private GitHub repo |
 | `--deploy-now` | Deploy to Cloudflare Pages immediately |
-| `--dir <path>` | Custom workspace (default: `D:\Claude_workspace`) |
+| `--dir <path>` | Custom workspace (default: `~/projects`) |
 | `--no-push` | Skip git push to GitHub |
 | `--org <name>` | Create under GitHub organization |
 | `--dry-run` | Preview without executing |

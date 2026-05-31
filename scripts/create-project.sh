@@ -10,13 +10,13 @@
 #   --private                                      创建私有仓库 (默认公开)
 #   --deploy cloudflare|none                       部署方式 (静态网站默认 cloudflare)
 #   --org <org>                                   在组织下创建仓库
-#   --dir <path>                                  指定工作目录 (默认 D:\Claude_workspace)
+#   --dir <path>                                  指定工作目录 (默认 $CREATE_PROJECT_WORKSPACE 或 ~/projects)
 #   --no-push                                     只创建本地仓库，不推送到 GitHub
 #   --deploy-now                                  立即通过 wrangler 部署到 Cloudflare Pages
 #   --dry-run                                     只显示将要执行的操作
 #
 # 示例:
-#   create-project my-website                     # 默认在 D:\Claude_workspace 创建
+#   create-project my-website                     # 在默认工作目录创建
 #   create-project my-app --type next             # Next.js 项目
 #   create-project my-lib --type node --private   # 私有 Node 库
 #   create-project my-blog --type static          # 纯静态网站 → Cloudflare Pages
@@ -24,6 +24,12 @@
 # ============================================================
 
 set -euo pipefail
+
+# --------------- 加载用户配置（可选，文件已被 .gitignore 排除） ---------------
+for _conf in "${HOME}/.create-project.env" "${HOME}/.config/create-project/env" "./.env"; do
+    [[ -f "$_conf" ]] && { source "$_conf"; break; }
+done
+unset _conf
 
 # --------------- 颜色输出 ---------------
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
@@ -38,7 +44,7 @@ PROJECT_TYPE=""
 VISIBILITY="public"
 DEPLOY_MODE=""
 ORG=""
-WORKSPACE="/d/Claude_workspace"
+WORKSPACE="${CREATE_PROJECT_WORKSPACE:-$HOME/projects}"
 NO_PUSH=false
 DEPLOY_NOW=false
 DRY_RUN=false
@@ -351,21 +357,46 @@ check_cloudflare() {
     return 0
 }
 
-# --------------- 生成 Cloudflare 配置说明 ---------------
+# --------------- Cloudflare 配置指引 ---------------
+get_cloudflare_account_id() {
+    # 优先使用环境变量
+    if [[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+        echo "$CLOUDFLARE_ACCOUNT_ID"
+        return
+    fi
+    # 从 wrangler 自动检测
+    if npx wrangler whoami &>/dev/null 2>&1; then
+        local id
+        id=$(npx wrangler whoami 2>/dev/null | grep -oP 'Account ID\s*\K[a-f0-9]+' | head -1 || true)
+        if [[ -n "$id" ]]; then
+            echo "$id"
+            return
+        fi
+    fi
+    echo "YOUR_ACCOUNT_ID"
+}
+
 print_cloudflare_setup_guide() {
-    local ACCOUNT_ID="f7085c2450a7ec7f257366e8cc602971"
+    local ACCOUNT_ID
+    ACCOUNT_ID=$(get_cloudflare_account_id)
     echo ""
     echo -e "${YELLOW}╔══════════════════════════════════════════════════════╗${NC}"
     echo -e "${YELLOW}║${NC}  ${CYAN}☁️  Cloudflare Pages 自动部署设置${NC}                      ${YELLOW}║${NC}"
     echo -e "${YELLOW}╠══════════════════════════════════════════════════════╣${NC}"
+    if [[ "$ACCOUNT_ID" != "YOUR_ACCOUNT_ID" ]]; then
     echo -e "${YELLOW}║${NC}  Account ID: ${GREEN}${ACCOUNT_ID}${NC}  ${YELLOW}║${NC}"
+    fi
     echo -e "${YELLOW}║${NC}                                                       ${YELLOW}║${NC}"
     echo -e "${YELLOW}║${NC}  还需创建 API Token:                                    ${YELLOW}║${NC}"
     echo -e "${YELLOW}║${NC}  1. 打开 ${BLUE}https://dash.cloudflare.com/profile/api-tokens${NC}  ${YELLOW}║${NC}"
     echo -e "${YELLOW}║${NC}  2. Create Token → Cloudflare Pages 模板               ${YELLOW}║${NC}"
     echo -e "${YELLOW}║${NC}  3. 复制 Token 后运行:                                  ${YELLOW}║${NC}"
-    echo -e "${YELLOW}║${NC}     gh secret set CLOUDFLARE_API_TOKEN -b\"你的token\"    ${YELLOW}║${NC}"
+    echo -e "${YELLOW}║${NC}     gh secret set CLOUDFLARE_API_TOKEN -b\"your-token\"  ${YELLOW}║${NC}"
+    if [[ "$ACCOUNT_ID" != "YOUR_ACCOUNT_ID" ]]; then
     echo -e "${YELLOW}║${NC}     gh secret set CLOUDFLARE_ACCOUNT_ID -b\"${ACCOUNT_ID}\" ${YELLOW}║${NC}"
+    else
+    echo -e "${YELLOW}║${NC}     gh secret set CLOUDFLARE_ACCOUNT_ID -b\"your-id\"    ${YELLOW}║${NC}"
+    fi
     echo -e "${YELLOW}║${NC}                                                       ${YELLOW}║${NC}"
     echo -e "${YELLOW}║${NC}  ${CYAN}💡 也可以用 --deploy-now 立即部署（无需 API Token）${NC}     ${YELLOW}║${NC}"
     echo -e "${YELLOW}╚══════════════════════════════════════════════════════╝${NC}"
